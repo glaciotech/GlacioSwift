@@ -5,22 +5,20 @@ import PackageDescription
 
 let package = Package(
     name: "GlacioSwift",
+    platforms: [.macOS("10.15"), .iOS(.v13)],
     products: [
-        // Products define the executables and libraries a package produces, and make them visible to other packages.
-        .library(
-            name: "GlacioSwift",
-            targets: ["GlacioSwift"]),
+        .library(name: "GlacioSwift", targets: ["GlacioSwift"]),
     ],
     dependencies: [
-        // Dependencies declare other packages that this package depends on.
-        // .package(url: /* package url */, from: "1.0.0"),
+        .package(url: "https://github.com/glaciotech/GlacioCore", branch: "master"),
+        .package(url: "https://github.com/realm/realm-swift", "10.0.0" ..< "11.0.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "GlacioSwift",
-            dependencies: []),
+            dependencies: ["GlacioCore", .product(name: "RealmSwift", package: "realm-swift")]),
         .testTarget(
             name: "GlacioSwiftTests",
             dependencies: ["GlacioSwift"]),
