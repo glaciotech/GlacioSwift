@@ -7,12 +7,13 @@
 
 import Foundation
 import GlacioCore
+import Network
 
 /// Class that creates a Glacio Node with the given directory to store chains, listening for commands on the given IP and Port
 open class NodeManager {
     
     public var node: Node
-    let cLog = ConsoleLog()
+    let log: Logger
     
     public let chaindir: String
     
@@ -23,30 +24,87 @@ open class NodeManager {
     }
     
     public var seedNodesRegisteredCallback: () -> Void = {}
-    
-    public init(chaindir: String =  GlacioConstants.defaultChainDir, port: UInt16 = GlacioConstants.defaultPort, seedNodes: [String]) throws {
+    private let ibc: NodeInboundConnectionManager
+
+    var discoverabilityService: DiscoverabilityService?
+
+    public init(chaindir: String = GlacioConstants.defaultChainDir, port: UInt16 = GlacioConstants.defaultPort,
+                seedNodes: [String], disableDiscoverability: Bool = false, discoverabilityServiceAddress: String, log: Logger = ConsoleLog()) throws {
+        
+        self.log = log
         
         let netNode = try NetworkedNode(port: port, succesfullyAddedNewBlockCallback: newBlockHandler, chaindir: chaindir)
 
         self.chaindir = chaindir
+
+        ibc = NodeInboundConnectionManager(port: port, node: netNode, logger: log)
         
-        let ibc = NodeInboundConnectionManager(port: port, node: netNode, logger: cLog)
+        self.node = netNode
+
+        if !disableDiscoverability {
+            self.discoverabilityService = DiscoverabilityService(nodePort: port, discoverabilityServiceAddress: discoverabilityServiceAddress)
+            self.addChainRegistrationObservers()
+        }
         
         do {
             try ibc.startListening()
         }
         catch(let error) {
-            cLog.error("Can't start node listening \(error)")
+            log.error("Can't start node listening \(error)")
         }
-        
-        self.node = netNode
         
         installDApps()
         
-        postInit(seedNodes: seedNodes)
+        connectToSeeds(seedNodes: seedNodes)
     }
     
-    func postInit(seedNodes: [String]) {
+    func addChainRegistrationObservers() {
+        
+        // Don't register for discoverability if there's no discoverability service
+        guard let discoverabilityService = self.discoverabilityService else { return }
+        
+        node.eventCenter.register(event: .chainAdded, object: self) { [weak self] result in
+            
+            let log = self?.log
+            
+            // If we're not a netNode, i.e. we're running a local node for testing we can't use discoverability as we're not connected to anything!
+            guard let netNode = self?.node as? NetworkedNode else { return }
+            
+            if let tResult = result as? ChainAddedResult {
+                // Lookup seed nodes
+                Task { [weak self] in
+                    let log = self?.log
+                    
+                    let registeredNodes = try await discoverabilityService.lookup(chainId: tResult.chainId)
+                
+                    _ = await withTaskGroup(of: Void.self, body: { taskGroup in
+                        
+                        registeredNodes.forEach({ endpoint in
+                            taskGroup.addTask {
+                                do {
+                                    _ = try await netNode.register(endpoint: endpoint)
+                                }
+                                catch {
+                                    log?.error("Failed to connect to \(endpoint)")
+                                }
+                            }
+                        })
+                    })
+                }
+            }
+            
+            guard let typedResult = result as? ChainAddedResult else { return }
+            
+            do {
+                try discoverabilityService.register(chainId: typedResult.chainId)
+            }
+            catch {
+                log?.error("Failed to register this node for chain: \(typedResult.chainId): \(error)")
+            }
+        }
+    }
+    
+    func connectToSeeds(seedNodes: [String]) {
         
         Task {
            _ = await withTaskGroup(of: Void.self, body: { taskGroup in
@@ -56,16 +114,21 @@ open class NodeManager {
 
                     let comps = urlString.split(separator: ":")
                     guard comps.count == 2, let _ = Int(comps[1]) else {
-                        cLog.error("Invalid URL: \(urlString) should just be {host}:{port}, e.g. localhost:9999. Will skip and not register")
+                        log.error("Invalid URL: \(urlString) should just be {host}:{port}, e.g. localhost:9999. Will skip and not register")
+                        return
+                    }
+                    
+                    guard let endpoint = NetworkEndpoint(urlString: urlString) else {
+                        log.error("Invalid address \(urlString). Will skip registering")
                         return
                     }
                     
                     taskGroup.addTask {
                         do {
-                            _ = try await self.node.register(nodeAddress: urlString)
+                            _ = try await self.node.register(endpoint: endpoint)
                         }
                         catch {
-                            self.cLog.error("Failed to register node \(urlString) with error: \(error)")
+                            self.log.error("Failed to register node \(urlString) with error: \(error)")
                         }
                     }
                 }
