@@ -18,8 +18,8 @@ public struct GlacioDebugView: View {
     
     var nodeInfo: some View {
         HStack {
-            if #available(iOS 14.0, *) {
-                Label("My Port: \(debugModel.myPort)", systemImage: "circle.square")
+            if #available(macOS 11.0, iOS 14.0, *) {
+                    Label("My Port: \(debugModel.myPort)", systemImage: "circle.square")
             } else {
                 Text("My Port: \(debugModel.myPort)")
             }
@@ -34,7 +34,7 @@ public struct GlacioDebugView: View {
             
             Spacer(minLength: 10)
             
-            if #available(iOS 14.0, *) {
+            if #available(macOS 11.0, iOS 14.0, *) {
                 Label("Peer nodes", systemImage: "person.3")
             } else {
                 Text("Peer nodes")
@@ -46,7 +46,7 @@ public struct GlacioDebugView: View {
             Divider()
             
             HStack {
-                if #available(iOS 14.0, *) {
+                if #available(macOS 11.0, iOS 14.0, *) {
                     Label("Chains", systemImage: "square.and.line.vertical.and.square")
                 } else {
                     Text("Chains")
