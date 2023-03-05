@@ -16,13 +16,7 @@ open class NodeManager {
     let log: Logger
     
     public let chaindir: String
-    
-    public var newBlockHandler: (Int) -> Void = { _ in } {
-        didSet {
-            node.succesfullyAddedNewBlock = newBlockHandler
-        }
-    }
-    
+
     public var seedNodesRegisteredCallback: () -> Void = {}
     private let ibc: NodeInboundConnectionManager
 
@@ -33,7 +27,7 @@ open class NodeManager {
         
         self.log = log
         
-        let netNode = try NetworkedNode(port: port, succesfullyAddedNewBlockCallback: newBlockHandler, chaindir: chaindir)
+        let netNode = try NetworkedNode(port: port, chaindir: chaindir)
 
         self.chaindir = chaindir
 
@@ -63,43 +57,39 @@ open class NodeManager {
         // Don't register for discoverability if there's no discoverability service
         guard let discoverabilityService = self.discoverabilityService else { return }
         
-        node.eventCenter.register(event: .chainAdded, object: self) { [weak self] result in
+        node.eventCenter.register(eventForType: ChainAdded.self, object: self) { [weak self] eventUpdate in
             
             let log = self?.log
             
             // If we're not a netNode, i.e. we're running a local node for testing we can't use discoverability as we're not connected to anything!
             guard let netNode = self?.node as? NetworkedNode else { return }
             
-            if let tResult = result as? ChainAddedResult {
-                // Lookup seed nodes
-                Task { [weak self] in
-                    let log = self?.log
-                    
-                    let registeredNodes = try await discoverabilityService.lookup(chainId: tResult.chainId)
+            // Lookup seed nodes
+            Task { [weak self] in
+                let log = self?.log
                 
-                    _ = await withTaskGroup(of: Void.self, body: { taskGroup in
-                        
-                        registeredNodes.forEach({ endpoint in
-                            taskGroup.addTask {
-                                do {
-                                    _ = try await netNode.register(endpoint: endpoint)
-                                }
-                                catch {
-                                    log?.error("Failed to connect to \(endpoint)")
-                                }
-                            }
-                        })
-                    })
-                }
-            }
+                let registeredNodes = try await discoverabilityService.lookup(chainId: eventUpdate.chainId)
             
-            guard let typedResult = result as? ChainAddedResult else { return }
+                _ = await withTaskGroup(of: Void.self, body: { taskGroup in
+                    
+                    registeredNodes.forEach({ endpoint in
+                        taskGroup.addTask {
+                            do {
+                                _ = try await netNode.register(endpoint: endpoint)
+                            }
+                            catch {
+                                log?.error("Failed to connect to \(endpoint)")
+                            }
+                        }
+                    })
+                })
+            }
             
             do {
-                try discoverabilityService.register(chainId: typedResult.chainId)
+                try discoverabilityService.register(chainId: eventUpdate.chainId)
             }
             catch {
-                log?.error("Failed to register this node for chain: \(typedResult.chainId): \(error)")
+                log?.error("Failed to register this node for chain: \(eventUpdate.chainId): \(error)")
             }
         }
     }
