@@ -12,8 +12,14 @@ public class DebugModel: ObservableObject {
     
     var node: Node
     
+    @Published var newestBlock: (Int, String) = (-1, "")
+    
     public init(node: Node) {
         self.node = node
+        
+        self.node.eventCenter.register(eventForType: NewBlockAdded.self, object: self) { [weak self] update in
+            self?.objectWillChange.send()
+        }
     }
     
     var myPort: String {
@@ -32,11 +38,16 @@ public class DebugModel: ObservableObject {
     }
  
     
+    
     func forceSync(chains: [String]) {
         chains.forEach({ try? node.sync(full: true, chainId: $0) })
     }
     
     func chainStatus(chain: String) -> String {
-        "\(node.chains[chain]?.status)"
+        "\(node.chains[chain]?.status.description ?? "-")"
+    }
+    
+    func lastBlockInfo(chainId: String) -> (Int, String) {
+        return (try? node.getChainManager(chainId: chainId).blockchain.lastBlockInfo) ?? (-1, "")
     }
 }
