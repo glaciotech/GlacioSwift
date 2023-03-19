@@ -10,7 +10,7 @@ import GlacioCore
 
 public class NodeInfoModel: ObservableObject {
     
-    @Published var chainStatus: ChainStatus = .unsynced(.initializing)
+    @Published public var chainStatus: ChainStatus = .unsynced(.initializing)
     
     private let node: GlacioCore.Node
     

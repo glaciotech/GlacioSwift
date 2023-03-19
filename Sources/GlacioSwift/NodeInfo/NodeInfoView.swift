@@ -26,7 +26,7 @@ public struct NodeInfoView: View {
                 }
             }
             
-            if #available(macOS 11.0, iOS 13.0, *) {
+            if #available(macOS 11.0, iOS 14.0, *) {
                 Label("\(chainInfo.chainStatus.description)", systemImage: imageName())
             } else {
                 Text("\(chainInfo.chainStatus.description)")
