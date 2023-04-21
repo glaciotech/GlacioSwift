@@ -55,8 +55,15 @@ public struct GlacioDebugView: View {
                 Text("Peer nodes")
             }
 
-            List(debugModel.peerNodes, id: \.self) { peer in
-                Text("\(peer)")
+            List(debugModel.peerNodes, id: \.0) { peer in
+                let backColor = peer.1 == "direct" ? Color.green : Color.blue
+                HStack {
+                    Text("\(peer.0)")
+                    Text("\(peer.1)".capitalized)
+                        .padding(2)
+                        .background(RoundedRectangle(cornerRadius: 3).fill(backColor))
+                }
+                
             }
             Divider()
             
