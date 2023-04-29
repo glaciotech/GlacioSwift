@@ -22,8 +22,20 @@ public class DebugModel: ObservableObject {
                 self?.objectWillChange.send()
             }
         }
-        
+
         self.node.eventCenter.register(eventForType: DirectRegister.self, object: self) { [weak self] register in
+            DispatchQueue.main.async {
+                self?.objectWillChange.send()
+            }
+        }
+
+        self.node.eventCenter.register(eventForType: NewBlockMined.self, object: self) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.objectWillChange.send()
+            }
+        }
+
+        node.eventCenter.register(eventForType: ChainSynced.self, object: self) { [weak self] result in
             DispatchQueue.main.async {
                 self?.objectWillChange.send()
             }
@@ -36,7 +48,7 @@ public class DebugModel: ObservableObject {
         }
         return "\(String(describing: netNode.port))"
     }
-    
+
     var peerNodes: [(String, String)] {
         node.peers.map({ ($0.0.absoluteString, "\($0.1)") })
     }

@@ -83,16 +83,7 @@ open class GlacioRealmCoordinator {
             glacioObserver.toggleDBObservingCallback = { [self] suspend in
                 suspend ? realmChangeObserver.stopObserving() : realmChangeObserver.createAndStartObservers()
             }
-            
-            nodeManager.seedNodesRegisteredCallback = { 
-                
-                do {
-                    try nodeManager.node.sync(full: true, chainId: chainId)
-                }
-                catch {
-                    print(error)
-                }
-            }
+
         }
         catch {
             throw GlacioError.initFailed
