@@ -9,23 +9,6 @@ import Foundation
 import RealmSwift
 import GlacioCore
 
-public struct GlacioConfiguration {
-    
-    public var chainId: String
-    public var chainDirPath: String
-    public var port: UInt16
-    public var seedNodes: [String]
-    public var discoverabilityServiceAddress: String
-    
-    public init(chainId: String, chainDirPath: String, port: UInt16, seedNodes: [String], discoverabilityServiceAddress: String) {
-        self.chainId = chainId
-        self.chainDirPath = chainDirPath
-        self.port = port
-        self.seedNodes = seedNodes
-        self.discoverabilityServiceAddress = discoverabilityServiceAddress
-    }
-}
-
 enum GlacioError: Error {
     case noDApp
     case initFailed
@@ -35,7 +18,7 @@ enum GlacioError: Error {
 /// Object that coordinates communication between Glacio and Realm. Listening for events from either Realm or Glacio and then transforming and transferring data between them
 open class GlacioRealmCoordinator {
 
-    let logger: Logger
+    let logger: GlacioCore.Logger
     
     let realm: Realm
     let objectsToMonitor: [any GlacioRealmObject.Type]
@@ -50,7 +33,7 @@ open class GlacioRealmCoordinator {
         return nodeManager.node
     }
 
-    public init(realm: Realm, nodeManager: NodeManager, chainId: String = GlacioConstants.defaultChain, objectsToMonitor: [any GlacioRealmObject.Type], logger: Logger = ConsoleLog()) throws {
+    public init(realm: Realm, nodeManager: NodeManager, chainId: String = GlacioConstants.defaultChain, objectsToMonitor: [any GlacioRealmObject.Type], logger: GlacioCore.Logger = ConsoleLog()) throws {
         
         self.logger = logger
         

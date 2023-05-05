@@ -21,9 +21,9 @@ class RealmChangeObserver: RealmWatcher {
     
     let oType: any GlacioRealmObject.Type
     
-    let logger: Logger
+    let logger: GlacioCore.Logger
     
-    init(realm: Realm, realmDApp: RealmChangeDApp, chainId: String, oType: any GlacioRealmObject.Type, logger: Logger = ConsoleLog()) {
+    init(realm: Realm, realmDApp: RealmChangeDApp, chainId: String, oType: any GlacioRealmObject.Type, logger: GlacioCore.Logger = ConsoleLog()) {
         self.logger = logger
         self.realm = realm
         self.realmDApp = realmDApp
@@ -49,7 +49,7 @@ class RealmChangeObserver: RealmWatcher {
                     try self.realmDApp.commit(changes: gChanges, chainId: self.chainId)
                 }
                 catch {
-                    self.logger.error("Failed to commit changes: \(gChanges) on \(self.chainId)")
+                    self.logger.error("Failed to commit changes: \(gChanges) on \(self.chainId) due to error \(error)")
                 }
             }
         }
