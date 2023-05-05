@@ -59,7 +59,6 @@ class GlacioNodeObserver: NodeWatcher, ObservableObject {
             catch {
                print("Sync on peer update failed with error \(error)")
             }
-            
         }
     }
     
@@ -67,26 +66,29 @@ class GlacioNodeObserver: NodeWatcher, ObservableObject {
         DispatchQueue.main.async { [weak self] in
             
             guard let self = self else { return }
-            
-            // Clear realm db
-            do {
-                try self.realm.write { [weak self] in
-                    self?.realm.deleteAll()
+                
+            // Make sure we execute realm operations on main so we don't get thread errors
+            DispatchQueue.main.async {
+                // Clear realm db
+                do {
+                    try self.realm.write { [weak self] in
+                        self?.realm.deleteAll()
+                    }
                 }
-            }
-            catch {
-                print("realm clear issue")
-            }
+                catch {
+                    print("realm clear issue")
+                }
                 
-            do {
-                guard self.chainId == syncedChainId else { return } // Ignore sync on other chains
-                
-                try self.loadDBData(fromIndex: 0, oType: self.oType)
-                
-                self.lastBlockUpdate = (try? self.node.getChainLength(chainId: self.chainId)) ?? 0 - 1 // Last block is always one less then length. TODO: - Add last block method to chain
-            }
-            catch {
-                print("Error during sync callback: \(error)")
+                do {
+                    guard self.chainId == syncedChainId else { return } // Ignore sync on other chains
+                    
+                    try self.loadDBData(fromIndex: 0, oType: self.oType)
+                    
+                    self.lastBlockUpdate = (try? self.node.getChainLength(chainId: self.chainId)) ?? 0 - 1 // Last block is always one less then length. TODO: - Add last block method to chain
+                }
+                catch {
+                    print("Error during sync callback: \(error)")
+                }
             }
         }
     }
