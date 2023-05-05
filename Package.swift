@@ -10,8 +10,7 @@ let package = Package(
         .library(name: "GlacioSwift", targets: ["GlacioSwift"]),
     ],
     dependencies: [
-//        .package(url: "https://github.com/glaciotech/GlacioCore", branch: "master"),
-        .package(name: "GlacioCore", path: "../../MacOS&iOS/Glacio"),
+        .package(url: "https://github.com/glaciotech/GlacioCore", branch: "pre-alpha-v0.12.0"),
         .package(url: "https://github.com/realm/realm-swift", "10.0.0" ..< "11.0.0"),
     ],
     targets: [
