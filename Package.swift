@@ -10,8 +10,13 @@ let package = Package(
         .library(name: "GlacioSwift", targets: ["GlacioSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/glaciotech/GlacioCore", branch: "pre-alpha-v0.12.0"),
         .package(url: "https://github.com/realm/realm-swift", "10.0.0" ..< "11.0.0"),
+        
+        .package(url: "https://github.com/glaciotech/GlacioCore", branch: "pre-alpha-v0.12.1"),
+//        .package(name: "GlacioCore", path: "../../MacOS&iOS/Glacio"),
+//        .package(name: "GlacioCore", path: "../../Glacio/GlacioCore-Deploy"),
+
+//        .package(name: "GlacioCore", path: "../GlacioCore-Deploy/Local"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
