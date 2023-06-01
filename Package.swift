@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/realm/realm-swift", "10.0.0" ..< "11.0.0"),
         
-        .package(url: "https://github.com/glaciotech/GlacioCore", branch: "pre-alpha-v0.12.1"),
+        .package(url: "https://github.com/glaciotech/GlacioCore", branch: "pre-alpha-v0.13.0"),
 //        .package(name: "GlacioCore", path: "../../MacOS&iOS/Glacio"),
 //        .package(name: "GlacioCore", path: "../../Glacio/GlacioCore-Deploy"),
 
