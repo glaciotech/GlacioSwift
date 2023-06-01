@@ -14,6 +14,8 @@ public struct GlacioDebugView: View {
     
     @State var selectedChains: Set<String> = Set([])
     
+    @State var peerNodes = [(String, String)]()
+    
     public init() { }
     
     var nodeInfo: some View {
@@ -55,7 +57,7 @@ public struct GlacioDebugView: View {
                 Text("Peer nodes")
             }
 
-            List(debugModel.peerNodes, id: \.0) { peer in
+            List(peerNodes, id: \.0) { peer in
                 let backColor = peer.1 == "direct" ? Color.green : Color.blue
                 HStack {
                     Text("\(peer.0)")
@@ -65,6 +67,7 @@ public struct GlacioDebugView: View {
                 }
                 
             }
+            
             Divider()
             
             HStack {
@@ -90,7 +93,11 @@ public struct GlacioDebugView: View {
                     }
                 }
             }
-        }
+        }.onAppear(perform: {
+            Task {
+                peerNodes = await debugModel.peerNodes
+            }
+        })
     }
 }
 

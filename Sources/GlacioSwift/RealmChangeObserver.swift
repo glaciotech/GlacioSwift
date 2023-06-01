@@ -37,6 +37,7 @@ class RealmChangeObserver: RealmWatcher {
     }
     
     func createAndStartObserver<T>(oType: T.Type) -> NotificationToken where T: GlacioRealmObject {
+        #warning("Needs to be started on main")
         let watcher = realm.objects(T.self).observe() { [weak self] changes in
 
             // Make sure we only watch updates. RealmCollectionChange.initial will give us the whole contents of the table on every start

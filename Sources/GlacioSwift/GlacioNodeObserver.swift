@@ -50,7 +50,7 @@ class GlacioNodeObserver: NodeWatcher, ObservableObject {
             self?.newBlockAdded(index: result.index)
         }
         
-        node.eventCenter.register(eventForType: PeerNodeAdded.self, object: self) { [weak self] eventUpdate in
+        node.eventCenter.register(eventForType: PeerNodeRegistrationChange.self, object: self) { [weak self] eventUpdate in
             // Resync chains on peer update
             do {
                 guard let chainId = self?.chainId else { return }

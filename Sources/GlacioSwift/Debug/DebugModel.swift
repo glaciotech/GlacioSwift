@@ -23,7 +23,7 @@ public class DebugModel: ObservableObject {
             }
         }
 
-        self.node.eventCenter.register(eventForType: DirectRegister.self, object: self) { [weak self] register in
+        self.node.eventCenter.register(eventForType: PeerNodeRegistrationChange.self, object: self) { [weak self] register in
             DispatchQueue.main.async {
                 self?.objectWillChange.send()
             }
@@ -50,7 +50,9 @@ public class DebugModel: ObservableObject {
     }
 
     var peerNodes: [(String, String)] {
-        node.peers.map({ ($0.0.absoluteString, "\($0.1)") })
+        get async {
+            await node.peers.map({ ("\($0.0.endpoint.description) \($0.0.id)", "\($0.1)") })
+        }
     }
     
     var chains: [String] {
