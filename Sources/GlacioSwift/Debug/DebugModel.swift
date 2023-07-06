@@ -10,16 +10,35 @@ import GlacioCore
 
 public class DebugModel: ObservableObject {
     
+    struct DisplayableBlockInfo {
+        var hash: String
+        var index: Int
+        var hashFirst4: String { String(hash.prefix(4)) }
+        var hashLast8: String { String(hash.suffix(8)) }
+        
+        static let empty = DisplayableBlockInfo(hash: "XXX", index: -999)
+    }
+    
     var node: Node
     
-    @Published var newestBlock: (Int, String) = (-1, "")
+    @Published var newestBlockInfo: DisplayableBlockInfo = .empty
     
     public init(node: Node) {
         self.node = node
         
+        func updateBlockInfo(chainId: String) {
+            Task {
+                let newestBlockInfo = (try? await lastBlockInfo(chainId: chainId)) ?? .empty
+                await MainActor.run {
+                    self.newestBlockInfo = newestBlockInfo
+                }
+            }
+        }
+        
         self.node.eventCenter.register(eventForType: NewBlockAdded.self, object: self) { [weak self] update in
             DispatchQueue.main.async {
                 self?.objectWillChange.send()
+                updateBlockInfo(chainId: update.chainId)
             }
         }
 
@@ -29,15 +48,17 @@ public class DebugModel: ObservableObject {
             }
         }
 
-        self.node.eventCenter.register(eventForType: NewBlockMined.self, object: self) { [weak self] _ in
+        self.node.eventCenter.register(eventForType: NewBlockMined.self, object: self) { [weak self] update in
             DispatchQueue.main.async {
                 self?.objectWillChange.send()
+                updateBlockInfo(chainId: update.chainId)
             }
         }
 
         node.eventCenter.register(eventForType: ChainSynced.self, object: self) { [weak self] result in
             DispatchQueue.main.async {
                 self?.objectWillChange.send()
+                updateBlockInfo(chainId: result.chainId)
             }
         }
     }
@@ -59,8 +80,6 @@ public class DebugModel: ObservableObject {
         node.chains.keys.map({ $0 })
     }
  
-    
-    
     func forceSync(chains: [String]) {
         chains.forEach({ try? node.sync(full: true, chainId: $0) })
     }
@@ -69,7 +88,18 @@ public class DebugModel: ObservableObject {
         "\(node.chains[chain]?.status.description ?? "-")"
     }
     
-    func lastBlockInfo(chainId: String) -> (Int, String) {
-        return (try? node.getChainManager(chainId: chainId).blockchain.lastBlockInfo) ?? (-1, "")
+    private func lastBlockInfo(chainId: String) async throws -> DisplayableBlockInfo {
+        let blockchain = try node.getChainManager(chainId: chainId).blockchain
+        let info = await blockchain.lastBlockInfo ?? .noInfo
+        return DisplayableBlockInfo(hash: info.hash, index: info.index)
+    }
+    
+    func refreshChainInfo(chainId: String) {
+        Task {
+            let newestBlockInfo = (try? await lastBlockInfo(chainId: chainId)) ?? .empty
+            await MainActor.run {
+                self.newestBlockInfo = newestBlockInfo
+            }
+        }
     }
 }

@@ -32,10 +32,15 @@ class RealmChangeObserver: RealmWatcher {
     }
     
     func createAndStartObservers() {
-        let watcher = createAndStartObserver(oType: oType)
-        self.observers["\(oType.self)"] = watcher
+        Task {
+            await MainActor.run {
+                let watcher = createAndStartObserver(oType: oType)
+                self.observers["\(oType.self)"] = watcher
+            }
+        }
     }
     
+    @MainActor
     func createAndStartObserver<T>(oType: T.Type) -> NotificationToken where T: GlacioRealmObject {
         #warning("Needs to be started on main")
         let watcher = realm.objects(T.self).observe() { [weak self] changes in

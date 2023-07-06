@@ -33,16 +33,12 @@ public struct GlacioDebugView: View {
             Text("\(chainId): \(debugModel.chainStatus(chain: chainId))")
             Spacer()
             HStack {
-                let lastBlockInfo = debugModel.lastBlockInfo(chainId: chainId)
-                let hashFirst4 = String(lastBlockInfo.1.prefix(4))
-                let hashLast8 = String(lastBlockInfo.1.suffix(8))
-                
-                Text("Last Block: ( \(lastBlockInfo.0), \(hashFirst4)...\(hashLast8) )")
+                let blockInfo = debugModel.newestBlockInfo
+                Text("Last Block: ( \(blockInfo.index), \(blockInfo.hashFirst4)...\(blockInfo.hashLast8) )")
             }
         }
-        
     }
-    
+
     public var body: some View {
         VStack(alignment: .leading) {
             
@@ -75,6 +71,11 @@ public struct GlacioDebugView: View {
                     Label("Chains", systemImage: "square.and.line.vertical.and.square")
                 } else {
                     Text("Chains")
+                }
+                Spacer().frame(width: 10)
+                Button("Refresh") {
+                    guard let chainId = debugModel.chains.first else { return}
+                    debugModel.refreshChainInfo(chainId: chainId)
                 }
                 Spacer()
             }

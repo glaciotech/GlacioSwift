@@ -59,7 +59,9 @@ open class GlacioRealmCoordinator {
             
             nodeManager.connect() 
             
-            try nodeManager.node.addChain(chainId: chainId)
+            Task {
+                try await nodeManager.node.addChain(chainId: chainId)
+            }
             
             realmChangeObserver.createAndStartObservers()
             
