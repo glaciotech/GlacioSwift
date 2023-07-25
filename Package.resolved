@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/glaciotech/GlacioCore",
       "state" : {
-        "branch" : "pre-alpha-v0.13.1",
-        "revision" : "4f2a611dd54c8388b12329915bf4a26b526a2221"
+        "branch" : "pre-alpha-v0.14.0",
+        "revision" : "750fdcab382040e37dde219816f4b177e60c6d2a"
       }
     },
     {
