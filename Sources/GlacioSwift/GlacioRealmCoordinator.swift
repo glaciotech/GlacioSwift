@@ -74,4 +74,8 @@ open class GlacioRealmCoordinator {
             throw GlacioError.initFailed
         }
     }
+    
+    @MainActor public func rebuildDBFromChain() async {
+        await glacioObserver.initialDBBuild(forChain: chainId)
+    }
 }

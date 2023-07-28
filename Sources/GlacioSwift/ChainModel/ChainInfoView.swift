@@ -8,9 +8,9 @@
 import SwiftUI
 import GlacioCore
 
-public struct NodeInfoView: View {
+public struct ChainInfoView: View {
     
-    @EnvironmentObject var chainInfo: NodeInfoModel
+    @EnvironmentObject var chainInfo: ChainModel
     
     public init() {}
     
@@ -37,6 +37,6 @@ public struct NodeInfoView: View {
 
 struct SwiftUIView_Previews: PreviewProvider {
     static var previews: some View {
-        NodeInfoView().environmentObject(NodeInfoModel(node: try! LocalNode()))
+        ChainInfoView()
     }
 }
