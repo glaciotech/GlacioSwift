@@ -63,6 +63,13 @@ public class DebugModel: ObservableObject {
         }
     }
     
+    var nodeId: String {
+        guard let netNode = self.node as? NetworkedNode else {
+            return "N/A - local node"
+        }
+        return netNode.id.uuidString
+    }
+    
     var myPort: String {
         guard let netNode = self.node as? NetworkedNode else {
             return "N/A - local node"
@@ -78,10 +85,6 @@ public class DebugModel: ObservableObject {
     
     var chains: [String] {
         node.chains.keys.map({ $0 })
-    }
- 
-    func forceSync(chains: [String]) {
-        chains.forEach({ try? node.sync(full: true, chainId: $0) })
     }
     
     func chainStatus(chain: String) -> String {

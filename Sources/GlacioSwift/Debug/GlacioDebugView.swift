@@ -21,7 +21,11 @@ public struct GlacioDebugView: View {
     var nodeInfo: some View {
         HStack {
             if #available(macOS 11.0, iOS 14.0, *) {
-                    Label("My Port: \(debugModel.myPort)", systemImage: "circle.square")
+                VStack(alignment: .leading) {
+                    Label("Node", systemImage: "circle.square")
+                    Text("Id: \(debugModel.nodeId)")
+                    Text("Port: \(debugModel.myPort)")
+                }
             } else {
                 Text("My Port: \(debugModel.myPort)")
             }
@@ -89,9 +93,6 @@ public struct GlacioDebugView: View {
                 
                 VStack {
                     Text("Chain Operations")
-                    Button("Force Sync") {
-                        debugModel.forceSync(chains: Array(selectedChains))
-                    }
                 }
             }
         }.onAppear(perform: {
