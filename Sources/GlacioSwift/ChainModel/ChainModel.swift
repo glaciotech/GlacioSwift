@@ -1,5 +1,5 @@
 //
-//  ChainInfoModel.swift
+//  ChainModel.swift
 //  Glacio
 //
 //  Created by Peter Liddle on 3/5/23.

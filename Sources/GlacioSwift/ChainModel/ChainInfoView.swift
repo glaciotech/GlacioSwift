@@ -1,5 +1,5 @@
 //
-//  SwiftUIView.swift
+//  ChainInfoView.swift
 //  
 //
 //  Created by Peter Liddle on 3/5/23.
