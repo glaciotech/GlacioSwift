@@ -10,7 +10,7 @@ import GlacioCore
 
 public struct ChainInfoView: View {
     
-    @EnvironmentObject var chainInfo: ChainModel
+    @EnvironmentObject var chainModel: ChainModel
     
     public init() {}
     
@@ -18,7 +18,7 @@ public struct ChainInfoView: View {
         HStack {
             
             let imageName: () -> String = {
-                if chainInfo.chainStatus ^== .synced(nil) {
+                if chainModel.chainStatus ^== .synced(nil) {
                     return "square.fill.and.line.vertical.square.fill"
                 }
                 else {
@@ -27,16 +27,16 @@ public struct ChainInfoView: View {
             }
             
             if #available(macOS 11.0, iOS 14.0, *) {
-                Label("\(chainInfo.chainStatus.description)", systemImage: imageName())
+                Label("\(chainModel.chainStatus.description)", systemImage: imageName()).font(.caption)
             } else {
-                Text("\(chainInfo.chainStatus.description)")
+                Text("\(chainModel.chainStatus.description)").font(.caption)
             }
         }
     }
 }
 
-struct SwiftUIView_Previews: PreviewProvider {
-    static var previews: some View {
-        ChainInfoView()
-    }
-}
+//struct SwiftUIView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        ChainInfoView()
+//    }
+//}

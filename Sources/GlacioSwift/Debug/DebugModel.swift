@@ -21,48 +21,70 @@ public class DebugModel: ObservableObject {
     
     var node: Node
     
-    @Published var newestBlockInfo: DisplayableBlockInfo = .empty
+    @Published var newestBlockInfo: [String: DisplayableBlockInfo] = [:]
+    @Published var peerNodes: [(String, String)] = []
+    
+    @Published var chains: [String: String] = [:]
     
     public init(node: Node) {
         self.node = node
+        _ = registerEvents
         
-        func updateBlockInfo(chainId: String) {
-            Task {
-                let newestBlockInfo = (try? await lastBlockInfo(chainId: chainId)) ?? .empty
-                await MainActor.run {
-                    self.newestBlockInfo = newestBlockInfo
-                }
+        Task {
+            await self.updateData()
+        }
+    }
+
+    @MainActor
+    @Sendable private func updateBlockInfo(chainId: String) async {
+        let newestBlockInfo = (try? await lastBlockInfo(chainId: chainId)) ?? .empty
+        self.newestBlockInfo[chainId] = newestBlockInfo
+    }
+    
+    lazy var registerEvents = {
+        
+        let eventCenter = self.node.eventCenter
+        
+        let taskA = Task {
+            for try await event in eventCenter.stream(for: Event.NewBlockAdded.self) {
+                await self.updateBlockInfo(chainId: event.chainId)
+            }
+        }
+         
+        let taskB = Task {
+            for try await _ in eventCenter.stream(for: Event.PeerNodeRegistrationChange.self) {
+                await self.updatePeerNodesDisplay()
             }
         }
         
-        self.node.eventCenter.register(eventForType: NewBlockAdded.self, object: self) { [weak self] update in
-            DispatchQueue.main.async {
-                self?.objectWillChange.send()
-                updateBlockInfo(chainId: update.chainId)
+        let taskC = Task {
+            for try await event in eventCenter.stream(for: Event.ChainSynced.self) {
+                await self.updateBlockInfo(chainId: event.chainId)
+                objectWillChange.send()
             }
         }
-
-        self.node.eventCenter.register(eventForType: PeerNodeRegistrationChange.self, object: self) { [weak self] register in
-            DispatchQueue.main.async {
-                self?.objectWillChange.send()
-            }
-        }
-
-        self.node.eventCenter.register(eventForType: NewBlockMined.self, object: self) { [weak self] update in
-            DispatchQueue.main.async {
-                self?.objectWillChange.send()
-                updateBlockInfo(chainId: update.chainId)
-            }
-        }
-
-        node.eventCenter.register(eventForType: ChainSynced.self, object: self) { [weak self] result in
-            DispatchQueue.main.async {
-                self?.objectWillChange.send()
-                updateBlockInfo(chainId: result.chainId)
+        
+//        await (taskA, taskB, taskC)
+        print("Never here")
+    }()
+    
+    @MainActor
+    public func updateData() {
+        Task {
+            await updatePeerNodesDisplay()
+            
+            for chainId in node.chains.keys {
+                chains[chainId] = chainStatus(chain: chainId)
             }
         }
     }
     
+    @MainActor
+    private func updatePeerNodesDisplay() async {
+        self.peerNodes = await node.peers.map({ ("\($0.0.endpoint.description) \($0.0.id)", "\($0.1)") })
+    }
+    
+    @MainActor
     var nodeId: String {
         guard let netNode = self.node as? NetworkedNode else {
             return "N/A - local node"
@@ -70,25 +92,17 @@ public class DebugModel: ObservableObject {
         return netNode.id.uuidString
     }
     
+    @MainActor
     var myPort: String {
         guard let netNode = self.node as? NetworkedNode else {
             return "N/A - local node"
         }
         return "\(String(describing: netNode.port))"
     }
-
-    var peerNodes: [(String, String)] {
-        get async {
-            await node.peers.map({ ("\($0.0.endpoint.description) \($0.0.id)", "\($0.1)") })
-        }
-    }
     
-    var chains: [String] {
-        node.chains.keys.map({ $0 })
-    }
-    
+    @MainActor
     func chainStatus(chain: String) -> String {
-        "\(node.chains[chain]?.status.description ?? "-")"
+        return "\(node.chains[chain]?.status.description ?? "-")"
     }
     
     private func lastBlockInfo(chainId: String) async throws -> DisplayableBlockInfo {
@@ -97,12 +111,9 @@ public class DebugModel: ObservableObject {
         return DisplayableBlockInfo(hash: info.hash, index: info.index)
     }
     
-    func refreshChainInfo(chainId: String) {
-        Task {
-            let newestBlockInfo = (try? await lastBlockInfo(chainId: chainId)) ?? .empty
-            await MainActor.run {
-                self.newestBlockInfo = newestBlockInfo
-            }
-        }
+    @MainActor
+    func refreshChainInfo(chainId: String) async {
+        let newestBlockInfo = (try? await lastBlockInfo(chainId: chainId)) ?? .empty
+        self.newestBlockInfo[chainId] = newestBlockInfo
     }
 }

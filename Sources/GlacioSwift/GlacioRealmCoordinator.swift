@@ -20,11 +20,11 @@ open class GlacioRealmCoordinator {
 
     let logger: GlacioCore.Logger
     
-    let realm: Realm
+    public let realm: Realm
     let objectsToMonitor: [any GlacioRealmObject.Type]
 
     let nodeManager: NodeManager
-    let glacioObserver: GlacioNodeObserver
+    let glacioObserver: GlacioChainObserver
     let realmChangeObserver: RealmChangeObserver
     
     public let chainId: String
@@ -47,7 +47,7 @@ open class GlacioRealmCoordinator {
         
         do {
             
-            self.glacioObserver = GlacioNodeObserver(node: node, realm: realm, chainId: chainId, object: objectsToMonitor[0])
+            self.glacioObserver = GlacioChainObserver(node: node, realm: realm, chainId: chainId, object: objectsToMonitor[0])
             
             guard let realmDApp = node.app(appType: RealmChangeDApp.self) else {
                 throw GlacioError.noDApp
@@ -57,6 +57,7 @@ open class GlacioRealmCoordinator {
             
             try glacioObserver.createNodeObservers()
             
+            #warning("Move this from here as it gets called multiple times and should only be called once for node")
             nodeManager.connect() 
             
             Task {
@@ -76,6 +77,6 @@ open class GlacioRealmCoordinator {
     }
     
     @MainActor public func rebuildDBFromChain() async {
-        await glacioObserver.initialDBBuild(forChain: chainId)
+        await glacioObserver.buildDB()
     }
 }

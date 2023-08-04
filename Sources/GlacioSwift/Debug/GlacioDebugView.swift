@@ -14,8 +14,6 @@ public struct GlacioDebugView: View {
     
     @State var selectedChains: Set<String> = Set([])
     
-    @State var peerNodes = [(String, String)]()
-    
     public init() { }
     
     var nodeInfo: some View {
@@ -32,13 +30,14 @@ public struct GlacioDebugView: View {
         }
     }
     
-    func chainDetail(chainId: String) -> some View {
+    func chainDetail(chainId: String, status: String) -> some View {
         HStack {
-            Text("\(chainId): \(debugModel.chainStatus(chain: chainId))")
+            Text("\(chainId): \(status)")
             Spacer()
             HStack {
-                let blockInfo = debugModel.newestBlockInfo
-                Text("Last Block: ( \(blockInfo.index), \(blockInfo.hashFirst4)...\(blockInfo.hashLast8) )")
+                if let blockInfo = debugModel.newestBlockInfo[chainId] {
+                    Text("Last Block: ( \(blockInfo.index), \(blockInfo.hashFirst4)...\(blockInfo.hashLast8) )")
+                }
             }
         }
     }
@@ -46,7 +45,17 @@ public struct GlacioDebugView: View {
     public var body: some View {
         VStack(alignment: .leading) {
             
-            nodeInfo
+            HStack {
+                nodeInfo
+                VStack {
+                    Button {
+                        debugModel.updateData()
+                    } label: {
+                        Label("Reload", systemImage: "arrow.clockwise")
+                    }
+                }
+            }
+            
             Divider()
             
             Spacer(minLength: 10)
@@ -57,7 +66,7 @@ public struct GlacioDebugView: View {
                 Text("Peer nodes")
             }
 
-            List(peerNodes, id: \.0) { peer in
+            List(debugModel.peerNodes, id: \.0) { peer in
                 let backColor = peer.1 == "direct" ? Color.green : Color.blue
                 HStack {
                     Text("\(peer.0)")
@@ -78,15 +87,17 @@ public struct GlacioDebugView: View {
                 }
                 Spacer().frame(width: 10)
                 Button("Refresh") {
-                    guard let chainId = debugModel.chains.first else { return}
-                    debugModel.refreshChainInfo(chainId: chainId)
+//                    guard let chainId = debugModel.chains.first else { return }
+//                    Task {
+//                        await debugModel.refreshChainInfo(chainId: chainId)
+//                    }
                 }
                 Spacer()
             }
             
             HStack(alignment: .top) {
-                List(debugModel.chains, id: \.self, selection: $selectedChains) { chainId in
-                    chainDetail(chainId: chainId)
+                List(Array(debugModel.chains), id: \.key, selection: $selectedChains) { (chainId, status) in
+                    chainDetail(chainId: chainId, status: status)
                 }
                 
                 Spacer(minLength: 15)
@@ -95,11 +106,10 @@ public struct GlacioDebugView: View {
                     Text("Chain Operations")
                 }
             }
-        }.onAppear(perform: {
-            Task {
-                peerNodes = await debugModel.peerNodes
-            }
-        })
+        }
+        .onAppear {
+            debugModel.updateData()
+        }
     }
 }
 
