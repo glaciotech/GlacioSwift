@@ -45,7 +45,10 @@ class GlacioChainObserver: NodeWatcher, ObservableObject {
         
         Task {
             for try await chainSyncedEvent in self.node.eventCenter.stream(for: Event.ChainSynced.self).filter({ self.byChain($0.chainId) }) {
+            
+                // We fully rebuild db at the moment to account for fork situations. This should be smarter and we should be able to just sync from changed block
                 await self.buildDB()
+//                try await self.loadDBData(fromIndex: chainSyncedEvent.fromBlockIndex, oType: self.oType)
             }
         }
         
@@ -89,36 +92,37 @@ class GlacioChainObserver: NodeWatcher, ObservableObject {
         // Disable db observing before
         toggleDBObservingCallback(true)
         
+        defer {
+            // Make sure we re-enable monitoring when we exit
+            toggleDBObservingCallback(false)
+        }
+        
         do {
             try await dApp.buildDB(fromBlock: index, chainId: chainId, forType: ChangeItem<T>.self) { tx in
                 
-                do {
-                    // Update database with the latest block
-                    guard let realmOb = tx.changeObj as? T else { throw DBUpdateError.unknownRealmObject }
-                    try realm.write {
-                        switch(tx.typeId) {
-                        case .create:
-                            guard realm.object(ofType: T.self, forPrimaryKey: realmOb.id) == nil else { return } //Don't add if the record already exists
-                            self.realm.add(realmOb)
-                        case .update:
-                            realm.add(realmOb, update: .modified)
-                        case .delete:
-                            guard let existingObj = realm.object(ofType: T.self, forPrimaryKey: realmOb.id) else { return }
-                            self.realm.delete(existingObj)
-                        }
+                // Update database with the latest block
+                guard let realmOb = tx.changeObj as? T else { throw DBUpdateError.unknownRealmObject }
+                try realm.write {
+                    switch(tx.typeId) {
+                    case .create:
+                        guard realm.object(ofType: T.self, forPrimaryKey: realmOb.id) == nil else { return } //Don't add if the record already exists
+                        self.realm.add(realmOb)
+                    case .update:
+                        realm.add(realmOb, update: .modified)
+                    case .delete:
+                        guard let existingObj = realm.object(ofType: T.self, forPrimaryKey: realmOb.id) else { return }
+                        self.realm.delete(existingObj)
                     }
-                }
-                catch {
-                    logger.error("Building DB from chain failed with error: \(error)")
-                    return
                 }
             }
         }
         catch BlockchainError.noChain {
             logger.info("Chain is empty so nothing to load")
         }
-        
-        toggleDBObservingCallback(false)
+        catch {
+            logger.error("Building DB from chain failed with error: \(error)")
+            throw error
+        }
     }
     
     private func newBlockAdded(index: Int) {

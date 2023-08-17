@@ -45,35 +45,31 @@ open class GlacioRealmCoordinator {
         
         let node = nodeManager.node
         
-        do {
             
-            self.glacioObserver = GlacioChainObserver(node: node, realm: realm, chainId: chainId, object: objectsToMonitor[0])
-            
-            guard let realmDApp = node.app(appType: RealmChangeDApp.self) else {
-                throw GlacioError.noDApp
-            }
-            
-            self.realmChangeObserver = RealmChangeObserver(realm: realm, realmDApp: realmDApp, chainId: chainId, oType: objectsToMonitor[0])
-            
-            try glacioObserver.createNodeObservers()
-            
+        self.glacioObserver = GlacioChainObserver(node: node, realm: realm, chainId: chainId, object: objectsToMonitor[0])
+        
+        guard let realmDApp = node.app(appType: RealmChangeDApp.self) else {
+            throw GlacioError.noDApp
+        }
+        
+        self.realmChangeObserver = RealmChangeObserver(realm: realm, realmDApp: realmDApp, chainId: chainId, oType: objectsToMonitor[0])
+        
+        try glacioObserver.createNodeObservers()
+        
+      
+        Task {
             #warning("Move this from here as it gets called multiple times and should only be called once for node")
-            nodeManager.connect() 
+            await nodeManager.connect()
             
-            Task {
-                try await nodeManager.node.addChain(chainId: chainId)
-            }
-            
-            realmChangeObserver.createAndStartObservers()
-            
-            glacioObserver.toggleDBObservingCallback = { [self] suspend in
-                suspend ? realmChangeObserver.stopObserving() : realmChangeObserver.createAndStartObservers()
-            }
+            try await nodeManager.node.addChain(chainId: chainId)
+        }
+        
+        realmChangeObserver.createAndStartObservers()
+        
+        glacioObserver.toggleDBObservingCallback = { [self] suspend in
+            suspend ? realmChangeObserver.stopObserving() : realmChangeObserver.createAndStartObservers()
+        }
 
-        }
-        catch {
-            throw GlacioError.initFailed
-        }
     }
     
     @MainActor public func rebuildDBFromChain() async {

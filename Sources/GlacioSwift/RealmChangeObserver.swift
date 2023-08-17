@@ -8,6 +8,7 @@
 import Foundation
 import RealmSwift
 import GlacioCore
+import Logging
 
 class RealmChangeObserver: RealmWatcher {
     
@@ -21,10 +22,11 @@ class RealmChangeObserver: RealmWatcher {
     
     let oType: any GlacioRealmObject.Type
     
-    let logger: GlacioCore.Logger
+    let logger = Logging.Logger(label: "RealmChangeObserver")
     
-    init(realm: Realm, realmDApp: RealmChangeDApp, chainId: String, oType: any GlacioRealmObject.Type, logger: GlacioCore.Logger = ConsoleLog()) {
-        self.logger = logger
+    private var watcherTask: Task<Void, Never>?
+    
+    init(realm: Realm, realmDApp: RealmChangeDApp, chainId: String, oType: any GlacioRealmObject.Type) {
         self.realm = realm
         self.realmDApp = realmDApp
         self.chainId = chainId
@@ -32,7 +34,7 @@ class RealmChangeObserver: RealmWatcher {
     }
     
     func createAndStartObservers() {
-        Task {
+        watcherTask = Task {
             await MainActor.run {
                 let watcher = createAndStartObserver(oType: oType)
                 self.observers["\(oType.self)"] = watcher
